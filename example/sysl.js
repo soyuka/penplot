@@ -7,14 +7,18 @@ import newArray from 'new-array';
 
 import { PaperSize, Orientation } from 'penplot';
 // import { randomFloat, setSeed } from 'penplot/util/random';
+// setSeed(2);
 import { polylinesToSVG } from 'penplot/util/svg';
 import lsystem from 'sysl'
+
+export const orientation = Orientation.PORTRAIT;
+export const dimensions = PaperSize.LETTER;
 
 function rad(v) {
  return v * (Math.PI / 180)
 }
 
-function FractalTree(num, init = 'A') {
+function SierpinskiArrowheadCurveRule(num, init = 'A') {
   return lsystem(num, rule, init)
 
   function rule (v) {
@@ -29,25 +33,11 @@ function FractalTree(num, init = 'A') {
   }
 }
 
-// setSeed(2);
-
-export const orientation = Orientation.PORTRAIT;
-export const dimensions = PaperSize.LETTER;
-
-export default function createPlot (context, dimensions) {
-  const [ width, height ] = dimensions;
-
-  // const lineCount = 20;
-  // const segments = 500;
-  // const radius = 2;
-
-  const start = [0, 0]
-  let lastPoint = [...start]
-  const distance = 0.05
-
+function SierpinskiArrowheadCurve({distance, angle, start, iterations}) {
   const lines = []
-  let angle = 180
-  let tree = FractalTree(10)
+
+  let previous = [...start]
+  let tree = SierpinskiArrowheadCurveRule(iterations)
   tree = tree[tree.length - 1]
 
   for (let i = 0; i < tree.length; i++) {
@@ -56,11 +46,11 @@ export default function createPlot (context, dimensions) {
     switch (tree[i]) {
       case 'A':
       case 'B':
-        from = [...lastPoint]
+        from = [...previous]
         var x = distance * Math.cos(rad(angle))
         var y = distance * Math.sin(rad(angle))
         to = [from[0] - x, from[1] - y]
-        lastPoint = [...to]
+        previous = [...to]
         lines.push(from, to)
         break
       case '+':
@@ -72,6 +62,80 @@ export default function createPlot (context, dimensions) {
     }
   }
 
+  return lines
+}
+
+function DragonCurveRule(num, init = 'FX') {
+  return lsystem(num, rule, init)
+
+  function rule (v) {
+    switch (v) {
+      case 'X':
+        return 'X+YF+'
+      case 'Y':
+        return '-FX-Y'
+    }
+
+    return v
+  }
+}
+
+function DragonCurve({distance, angle, start, iterations}) {
+  const lines = []
+
+  let previous = [...start]
+  let tree = DragonCurveRule(iterations)
+  tree = tree[tree.length - 1]
+  console.log(tree)
+
+  for (let i = 0; i < tree.length; i++) {
+    let from, to
+
+    switch (tree[i]) {
+      case 'F':
+        from = [...previous]
+        var x = distance * Math.cos(rad(angle))
+        var y = distance * Math.sin(rad(angle))
+        to = [from[0] - x, from[1] - y]
+        previous = [...to]
+        lines.push(from, to)
+        break
+      case '+':
+        angle -= 90
+        break;
+      case '-':
+        angle += 90
+        break;
+    }
+  }
+
+  return lines
+}
+
+export default function createPlot (context, dimensions) {
+  const [ width, height ] = dimensions;
+
+  // const start = [width / 6, height / 2]
+  // const distance = 0.05
+  // const angle = 180
+  // const iterations = 9
+  // const lines = SierpinskiArrowheadCurve({distance, angle, start, iterations})
+
+
+  // const start = [width / 2, height / 2]
+  // const distance = 1
+  // const angle = 180
+  // const iterations = 10
+  // const lines = DragonCurve({distance, angle, start, iterations})
+  // console.log(lines)
+
+  const start = [width / 2, height / 2]
+  const distance = 1
+  const angle = 180
+  const iterations = 7
+  const lines = DragonCurve({distance, angle, start, iterations})
+  console.log(lines)
+
   return {
     draw,
     print,
@@ -82,13 +146,20 @@ export default function createPlot (context, dimensions) {
   function draw () {
     [lines].forEach(points => {
       context.beginPath();
+      context.lineWidth = 0.1
+
+      //bevel, round, mitter
+      // context.lineJoin = 'mitter';
+      //butt round square
+      // context.lineCap = 'butt';
       points.forEach(p => context.lineTo(p[0], p[1]));
       context.stroke();
     });
   }
 
   function print () {
-    return polylinesToSVG(lines, {
+    // document.body.innerText = polylinesToSVG([lines], {dimensions})
+    return polylinesToSVG([lines], {
       dimensions
     });
   }
