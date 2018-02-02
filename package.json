@@ -71,6 +71,7 @@
     "smoothstep": "^1.0.1",
     "split-polygon": "^1.0.0",
     "svg-3d-simplicial-complex": "^0.1.1",
+    "sysl": "^1.0.1",
     "through2": "^2.0.3",
     "triangle-centroid": "^1.0.0",
     "triangle-incenter": "^1.0.2",
